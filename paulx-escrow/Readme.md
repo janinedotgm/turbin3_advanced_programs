@@ -1,4 +1,9 @@
-# Make it better.
+# PaulX Tutorial
+Src: [https://paulx.dev/blog/2021/01/14/programming-on-solana-an-introduction/](https://paulx.dev/blog/2021/01/14/programming-on-solana-an-introduction/)
+
+## To-Do
+[x] Make it work
+[ ] Make it better
 
 ## Entrypoint
 [Every Solana program includes a single entrypoint used to invoke the program. The process_instruction function is then used to process the data passed into the entrypoint.](https://solana.com/developers/guides/getstarted/intro-to-native-rust#entrypoint)
