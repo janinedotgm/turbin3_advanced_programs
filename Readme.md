@@ -23,9 +23,6 @@ This repository contains my work for the Solana Turbine3 Advanced Programs with 
 - `vault_program/`: Work in progress for the vault program.
 - `README.md`: This file, documenting the course progress and project details.
 
-## Progress Updates
-
-I will update this section with more detailed progress notes as I continue with the course and complete more projects.
 ---
 
 Feel free to reach out if you have any questions or suggestions regarding my projects or this repository.
