@@ -81,11 +81,11 @@ impl Processor {
         invoke(
             &owner_change_ix,
             &[
-        temp_token_account.clone(),
-        initializer.clone(),
-        token_program.clone(),
-        ],
-    )?;
+                temp_token_account.clone(),
+                initializer.clone(),
+                token_program.clone(),
+            ],
+        )?;
 
         Ok(())      
     }

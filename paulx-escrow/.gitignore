@@ -2,3 +2,5 @@
 /*.so
 /target/
 /test-ledger
+/test-app/node_modules
+/test-app/scripts/*keypair.json
