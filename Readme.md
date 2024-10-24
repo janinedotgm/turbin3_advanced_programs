@@ -26,7 +26,6 @@ This repository contains my work for the Solana Turbine3 Advanced Programs with 
 ## Progress Updates
 
 I will update this section with more detailed progress notes as I continue with the course and complete more projects.
-å
 ---
 
 Feel free to reach out if you have any questions or suggestions regarding my projects or this repository.
