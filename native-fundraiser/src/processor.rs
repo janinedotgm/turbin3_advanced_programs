@@ -1,25 +1,13 @@
 use bytemuck::{Pod, Zeroable};
-use pinocchio::{program_error::ProgramError, ProgramResult};
-use pinocchio::pubkey::Pubkey;
-use pinocchio::account_info::AccountInfo;
-use pinocchio::log::sol_log;
+use pinocchio::{
+    program_error::ProgramError, 
+    ProgramResult,
+    msg,
+    pubkey::Pubkey,
+    account_info::AccountInfo,
+};
 
 use crate::instructions::*;
-
-#[repr(C)]
-#[derive(Clone, Copy, Pod, Zeroable)]
-pub struct FundraiserArgs{
-    pub amount: u64,
-    pub duration: u64,
-    pub fundraiser_bump: u8,
-    _padding: [u8; 7],
-}
-
-// #[derive(BorshDeserialize, BorshSerialize)]
-// pub struct ContributeArgs{
-//     pub amount: u64,
-//     pub contributor_bump: u8
-// }
 
 pub enum FundraiserInstructions {
     Initialize,
@@ -60,27 +48,38 @@ impl TryFrom<&[u8]> for Initialize {
     }
 }
 
-// #[repr(C)]
-// enum FundraiserInstruction {
-//     Initialize(FundraiserArgs),
-//     Contribute,
-//     Checker,
-//     Refund,
-// }
+#[repr(C)]
+#[derive(Clone, Copy, PartialEq, Eq, Pod, Zeroable)]
+pub struct Contribute {
+    pub amount: u64,
+    pub contributor_bump: u64,
+}
+
+impl TryFrom<&[u8]> for Contribute {
+    
+    type Error = ProgramError;
+    
+    fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
+        bytemuck::try_pod_read_unaligned::<Self>(data)
+            .map_err(|_| ProgramError::InvalidInstructionData)
+    }
+}
 
 pub fn process_instruction(program_id: &Pubkey, accounts: &[AccountInfo], instruction_data: &[u8]) -> ProgramResult {
 
+    msg!("Let's process!");
     if program_id.ne(&crate::ID) {
         return Err(ProgramError::IncorrectProgramId);
     }
 
-    sol_log("processor: process_instruction started");
+    msg!("processor: process_instruction started");
 
     let (discriminator, data) = instruction_data.split_first().ok_or(ProgramError::InvalidInstructionData)?;
-    sol_log("processor: discriminator and data splitted");
+    msg!("processor: discriminator and data splitted");
 
     match FundraiserInstructions::try_from(discriminator)? {
         FundraiserInstructions::Initialize => initialize(accounts, data),
+        FundraiserInstructions::Contribute => contribute(accounts, data),
         _ => Err(ProgramError::InvalidInstructionData),
     }
 }
