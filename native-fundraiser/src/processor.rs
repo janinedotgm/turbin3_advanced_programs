@@ -2,7 +2,6 @@ use bytemuck::{Pod, Zeroable};
 use pinocchio::{
     program_error::ProgramError, 
     ProgramResult,
-    msg,
     pubkey::Pubkey,
     account_info::AccountInfo,
 };
@@ -34,7 +33,7 @@ impl TryFrom<&u8> for FundraiserInstructions {
 #[derive(Clone, Copy, PartialEq, Eq, Pod, Zeroable)]
 pub struct Initialize {
     pub amount: u64,
-    pub duration: u64,
+    pub duration: i64,
     pub fundraiser_bump: u64,
 }
 
@@ -66,15 +65,11 @@ impl TryFrom<&[u8]> for Contribute {
 
 pub fn process_instruction(program_id: &Pubkey, accounts: &[AccountInfo], instruction_data: &[u8]) -> ProgramResult {
 
-    msg!("Let's process!");
     if program_id.ne(&crate::ID) {
         return Err(ProgramError::IncorrectProgramId);
     }
 
-    msg!("processor: process_instruction started");
-
     let (discriminator, data) = instruction_data.split_first().ok_or(ProgramError::InvalidInstructionData)?;
-    msg!("processor: discriminator and data splitted");
 
     match FundraiserInstructions::try_from(discriminator)? {
         FundraiserInstructions::Initialize => initialize(accounts, data),

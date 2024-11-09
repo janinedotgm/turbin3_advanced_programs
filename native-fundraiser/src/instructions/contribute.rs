@@ -1,20 +1,18 @@
 use pinocchio::{
     account_info::AccountInfo,
-    msg, 
     program_error::ProgramError, 
-    // sysvars::{clock::Clock, Sysvar}, 
+    sysvars::{clock::Clock, Sysvar}, 
     ProgramResult
 };
 use pinocchio_token::instructions::Transfer;
 use crate::{constants::PERCENTAGE_SCALER, processor::Contribute};
-use crate::constants::{MIN_AMOUNT_TO_RAISE, MAX_CONTRIBUTION_PERCENTAGE};
+use crate::constants::{MIN_AMOUNT_TO_RAISE, MAX_CONTRIBUTION_PERCENTAGE, SECONDS_TO_DAYS};
 use crate::state::{Fundraiser, Contributor};
 
 pub fn contribute(
     accounts: &[AccountInfo],
     args: &[u8]
 ) -> ProgramResult {
-    msg!("contribute: started");
     let [ 
         contributor,
         fundraiser,
@@ -50,9 +48,8 @@ pub fn contribute(
     assert!(amount + contributor_data.amount <= amount_allowed);
     
     // check if the fundraising duration has been reached
-    // let current_time = Clock::get()?.unix_timestamp; // TODO: fix this
-    // msg!("contribute: current_time: {:?}", current_time); // current time is 0 when the program is executed ? because of testing?
-    // let fundraiser_end_time = ((current_time - fundraiser_data.time_started) / SECONDS_TO_DAYS) as u8;
+    let current_time = Clock::get()?.unix_timestamp; // TODO: fix this
+    let _fundraiser_end_time = (current_time - fundraiser_data.time_started) / SECONDS_TO_DAYS;
     // assert!(fundraiser_end_time >= fundraiser_data.duration);
 
     // transfer the contribution amount to the vault
