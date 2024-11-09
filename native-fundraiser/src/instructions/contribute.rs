@@ -2,10 +2,13 @@ use pinocchio::{
     account_info::AccountInfo,
     program_error::ProgramError, 
     sysvars::{clock::Clock, Sysvar}, 
-    ProgramResult
+    instruction::Seed,
+    ProgramResult,
+    pubkey,
+    msg,
 };
 use pinocchio_token::instructions::Transfer;
-use crate::{constants::PERCENTAGE_SCALER, processor::Contribute};
+use crate::{constants::PERCENTAGE_SCALER, processor::ContributeArgs};
 use crate::constants::{MIN_AMOUNT_TO_RAISE, MAX_CONTRIBUTION_PERCENTAGE, SECONDS_TO_DAYS};
 use crate::state::{Fundraiser, Contributor};
 
@@ -26,21 +29,32 @@ pub fn contribute(
 
     assert!(contributor.is_signer());
 
-    let Contribute {
+    let ContributeArgs {
         amount,
-    } = Contribute::try_from(args)?;
+        vault_bump,
+    } = ContributeArgs::try_from(args)?;
+
+    let u8_vault_bump = vault_bump as u8;
+
+    // check if vault is correct
+    let vault_pda = pubkey::create_program_address(&[
+        b"vault",
+        fundraiser.key().as_ref(),
+        &[u8_vault_bump]
+    ], &crate::ID)?;
+
+    assert_eq!(&vault_pda, vault.key());
 
     // Check if the amount to contribute meets the minimum amount required
     assert!(amount >= MIN_AMOUNT_TO_RAISE);
 
     // Borrow the data and immediately convert it
-    let fundraiser_clone = fundraiser.clone();
-    let mut fundraiser_data: Fundraiser = *bytemuck::try_from_bytes::<Fundraiser>(&fundraiser_clone.try_borrow_mut_data()?).map_err(|_| ProgramError::InvalidAccountData)?;
+    let mut fundraiser_data: Fundraiser = *bytemuck::try_from_bytes::<Fundraiser>(&fundraiser.try_borrow_mut_data()?).map_err(|_| ProgramError::InvalidAccountData)?;
 
     // Check if the total amount raised is less than the maximum amount to raise
     assert!(amount + fundraiser_data.current_amount <= fundraiser_data.amount_to_raise);
 
-    // We expect the contributor pda to be created by the frontend
+    // TODO: check if the contributer account exists and create it if it doesn't or can we expect it to be created by the frontend?
     let mut contributor_data: Contributor = *bytemuck::try_from_bytes::<Contributor>(&contributor_account.try_borrow_mut_data()?).map_err(|_| ProgramError::InvalidAccountData)?;
 
     // Check if the amount to contribute is less than the maximum allowed contribution per contributor

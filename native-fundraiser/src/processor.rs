@@ -31,13 +31,13 @@ impl TryFrom<&u8> for FundraiserInstructions {
 
 #[repr(C)]
 #[derive(Clone, Copy, PartialEq, Eq, Pod, Zeroable)]
-pub struct Initialize {
+pub struct InitializeArgs {
     pub amount: u64,
     pub duration: i64,
     pub fundraiser_bump: u64,
 }
 
-impl TryFrom<&[u8]> for Initialize {
+impl TryFrom<&[u8]> for InitializeArgs {
     
     type Error = ProgramError;
     
@@ -49,11 +49,28 @@ impl TryFrom<&[u8]> for Initialize {
 
 #[repr(C)]
 #[derive(Clone, Copy, PartialEq, Eq, Pod, Zeroable)]
-pub struct Contribute {
+pub struct ContributeArgs {
     pub amount: u64,
+    pub vault_bump: u64,
 }
 
-impl TryFrom<&[u8]> for Contribute {
+impl TryFrom<&[u8]> for ContributeArgs {
+    
+    type Error = ProgramError;
+    
+    fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
+        bytemuck::try_pod_read_unaligned::<Self>(data)
+            .map_err(|_| ProgramError::InvalidInstructionData)
+    }
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, PartialEq, Eq, Pod, Zeroable)]
+pub struct CheckerArgs {
+    pub fundraiser_bump: u64,
+}
+
+impl TryFrom<&[u8]> for CheckerArgs {
     
     type Error = ProgramError;
     
@@ -74,6 +91,7 @@ pub fn process_instruction(program_id: &Pubkey, accounts: &[AccountInfo], instru
     match FundraiserInstructions::try_from(discriminator)? {
         FundraiserInstructions::Initialize => initialize(accounts, data),
         FundraiserInstructions::Contribute => contribute(accounts, data),
+        FundraiserInstructions::Checker => checker(accounts, data),
         _ => Err(ProgramError::InvalidInstructionData),
     }
 }

@@ -10,7 +10,7 @@ use pinocchio::{
 };
 use pinocchio_system::instructions::CreateAccount;
 
-use crate::processor::Initialize;
+use crate::processor::InitializeArgs;
 
 pub fn initialize(
     accounts: &[AccountInfo],
@@ -28,11 +28,11 @@ pub fn initialize(
 
     assert!(maker.is_signer());
 
-    let Initialize {
+    let InitializeArgs {
         amount, // the target amount that the maker is trying to raise
         duration, // the timeframe to collect all the contributions (in days)
         fundraiser_bump, // since our Fundraiser account will be a PDA (Program Derived Address), we will pass the bump of the account
-    } = Initialize::try_from(args)?;
+    } = InitializeArgs::try_from(args)?;
 
     // check derived address and get bump
     let (_, bump) = pubkey::find_program_address(&[

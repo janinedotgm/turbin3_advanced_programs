@@ -16,6 +16,3 @@ pub struct Fundraiser {
 impl Fundraiser {
     pub const LEN: usize = std::mem::size_of::<Fundraiser>();
 }
-
-
-
