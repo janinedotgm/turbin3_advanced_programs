@@ -151,7 +151,6 @@ mod tests {
         let contributor_account_data = AccountSharedData::new(1_000_000_000, 0, &contributor);
 
         let mint_to_raise = SolanaPubkey::new_unique();
-        let mint_account = create_mint_account(&mollusk, &mint_to_raise);
         let (contributor_pda, contributor_bump) = SolanaPubkey::find_program_address(&[b"contributor", contributor.as_ref()], &PROGRAM_ID);
         let vault = SolanaPubkey::new_unique();
         let contributor_ta = SolanaPubkey::new_unique();
@@ -201,7 +200,6 @@ mod tests {
         let data = [
             vec![1],
             1_000u64.to_le_bytes().to_vec(), // amount
-            123u64.to_le_bytes().to_vec(), // vault_bump
         ]
         .concat();
 
@@ -242,7 +240,6 @@ mod tests {
             &data,
             vec![
                 AccountMeta::new(contributor, true),
-                AccountMeta::new(mint_to_raise, false),
                 AccountMeta::new(fundraiser, false),
                 AccountMeta::new(contributor_ta, true),
                 AccountMeta::new(contributor_pda, false),
@@ -255,7 +252,6 @@ mod tests {
             &instruction,
             &vec![
                 (contributor, contributor_account_data),
-                (mint_to_raise, mint_account),
                 (fundraiser, fundraiser_account),
                 (contributor_ta, contributor_ta_account),
                 (contributor_pda, contributor_account),

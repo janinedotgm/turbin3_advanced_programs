@@ -52,7 +52,6 @@ impl TryFrom<&[u8]> for Initialize {
 #[derive(Clone, Copy, PartialEq, Eq, Pod, Zeroable)]
 pub struct Contribute {
     pub amount: u64,
-    pub vault_bump: u64,
 }
 
 impl TryFrom<&[u8]> for Contribute {

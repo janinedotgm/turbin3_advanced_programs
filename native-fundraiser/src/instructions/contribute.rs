@@ -17,12 +17,11 @@ pub fn contribute(
     msg!("contribute: started");
     let [ 
         contributor,
-        mint_to_raise,
         fundraiser,
         contributor_ta,
         contributor_account, // account that saves the contribution amount of the contributor
         vault, // account that receives the contribution
-    _token_program,
+        _token_program,
     ] = accounts else {
         return Err(ProgramError::NotEnoughAccountKeys);
     };
@@ -31,7 +30,6 @@ pub fn contribute(
 
     let Contribute {
         amount,
-        vault_bump,
     } = Contribute::try_from(args)?;
 
     // Check if the amount to contribute meets the minimum amount required
