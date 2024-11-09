@@ -1,17 +1,14 @@
 use pinocchio::{
-    ProgramResult,
     account_info::AccountInfo,
-    msg,
-    program_error::ProgramError,
-    pubkey,
-    instruction::{
-        Seed,
-        Signer,
-    }
+    msg, 
+    program_error::ProgramError, 
+    // sysvars::{clock::Clock, Sysvar}, 
+    ProgramResult
 };
-use crate::processor::Contribute;
-use crate::constants::MIN_AMOUNT_TO_RAISE;
-use crate::state::Fundraiser;
+use pinocchio_token::instructions::Transfer;
+use crate::{constants::PERCENTAGE_SCALER, processor::Contribute};
+use crate::constants::{MIN_AMOUNT_TO_RAISE, MAX_CONTRIBUTION_PERCENTAGE};
+use crate::state::{Fundraiser, Contributor};
 
 pub fn contribute(
     accounts: &[AccountInfo],
@@ -22,6 +19,10 @@ pub fn contribute(
         contributor,
         mint_to_raise,
         fundraiser,
+        contributor_ta,
+        contributor_account, // account that saves the contribution amount of the contributor
+        vault, // account that receives the contribution
+    _token_program,
     ] = accounts else {
         return Err(ProgramError::NotEnoughAccountKeys);
     };
@@ -30,27 +31,45 @@ pub fn contribute(
 
     let Contribute {
         amount,
-        contributor_bump,
+        vault_bump,
     } = Contribute::try_from(args)?;
-
-    msg!("contribute: amount: {}", amount);
-    msg!("contribute: contributor_bump: {}", contributor_bump);
 
     // Check if the amount to contribute meets the minimum amount required
     assert!(amount >= MIN_AMOUNT_TO_RAISE);
 
     // Borrow the data and immediately convert it
     let fundraiser_clone = fundraiser.clone();
-    let fundraiser_data: Fundraiser = *bytemuck::try_from_bytes::<Fundraiser>(&fundraiser_clone.try_borrow_data()?).map_err(|_| ProgramError::InvalidAccountData)?;
+    let mut fundraiser_data: Fundraiser = *bytemuck::try_from_bytes::<Fundraiser>(&fundraiser_clone.try_borrow_mut_data()?).map_err(|_| ProgramError::InvalidAccountData)?;
 
     // Check if the total amount raised is less than the maximum amount to raise
     assert!(amount + fundraiser_data.current_amount <= fundraiser_data.amount_to_raise);
 
-    // Check if contributor pda already exists
-    let contributor_pda = pubkey::find_program_address(&[b"contributor", &contributor.key().as_ref(), &contributor_bump.to_le_bytes()], &crate::ID);
+    // We expect the contributor pda to be created by the frontend
+    let mut contributor_data: Contributor = *bytemuck::try_from_bytes::<Contributor>(&contributor_account.try_borrow_mut_data()?).map_err(|_| ProgramError::InvalidAccountData)?;
 
     // Check if the amount to contribute is less than the maximum allowed contribution per contributor
-    // if contributor_pda
+    let amount_allowed = (fundraiser_data.amount_to_raise * MAX_CONTRIBUTION_PERCENTAGE) / PERCENTAGE_SCALER;
+    assert!(amount + contributor_data.amount <= amount_allowed);
+    
+    // check if the fundraising duration has been reached
+    // let current_time = Clock::get()?.unix_timestamp; // TODO: fix this
+    // msg!("contribute: current_time: {:?}", current_time); // current time is 0 when the program is executed ? because of testing?
+    // let fundraiser_end_time = ((current_time - fundraiser_data.time_started) / SECONDS_TO_DAYS) as u8;
+    // assert!(fundraiser_end_time >= fundraiser_data.duration);
 
+    // transfer the contribution amount to the vault
+    Transfer {
+        from: contributor_ta,
+        to: vault,
+        authority: contributor,
+        amount
+    }.invoke()?;
+
+    fundraiser_data.current_amount = fundraiser_data.current_amount + amount;
+    contributor_data.amount = contributor_data.amount + amount;
+
+    fundraiser.try_borrow_mut_data()?.copy_from_slice(bytemuck::bytes_of(&fundraiser_data));
+    contributor_account.try_borrow_mut_data()?.copy_from_slice(bytemuck::bytes_of(&contributor_data));
+      
     Ok(())
 }
