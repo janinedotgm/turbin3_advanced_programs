@@ -2,7 +2,6 @@ use pinocchio::{
     account_info::AccountInfo,
     program_error::ProgramError,
     ProgramResult,
-    pubkey,
     instruction::{Seed, Signer},
 };
 use pinocchio_token::instructions::Transfer;

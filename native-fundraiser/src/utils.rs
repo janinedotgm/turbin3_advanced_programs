@@ -1,5 +1,4 @@
 use pinocchio::{
-    program_error::ProgramError,
     pubkey,
     pubkey::Pubkey
 };

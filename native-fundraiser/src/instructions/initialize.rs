@@ -6,7 +6,6 @@ use pinocchio::{
     sysvars::rent::Rent,
     sysvars::Sysvar,
     instruction::{Seed, Signer},
-    msg
 };
 use pinocchio_system::instructions::CreateAccount;
 

@@ -81,6 +81,23 @@ impl TryFrom<&[u8]> for CheckerArgs {
     }
 }
 
+#[repr(C)]
+#[derive(Clone, Copy, PartialEq, Eq, Pod, Zeroable)]
+pub struct RefundArgs {
+    pub fundraiser_bump: u64,
+    pub vault_bump: u64,
+}
+
+impl TryFrom<&[u8]> for RefundArgs {
+    
+    type Error = ProgramError;
+    
+    fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
+        bytemuck::try_pod_read_unaligned::<Self>(data)
+            .map_err(|_| ProgramError::InvalidInstructionData)
+    }
+}
+
 pub fn process_instruction(program_id: &Pubkey, accounts: &[AccountInfo], instruction_data: &[u8]) -> ProgramResult {
 
     if program_id.ne(&crate::ID) {
@@ -93,6 +110,6 @@ pub fn process_instruction(program_id: &Pubkey, accounts: &[AccountInfo], instru
         FundraiserInstructions::Initialize => initialize(accounts, data),
         FundraiserInstructions::Contribute => contribute(accounts, data),
         FundraiserInstructions::Checker => checker(accounts, data),
-        _ => Err(ProgramError::InvalidInstructionData),
+        FundraiserInstructions::Refund => refund(accounts, data)
     }
 }

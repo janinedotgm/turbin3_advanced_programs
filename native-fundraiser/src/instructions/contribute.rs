@@ -2,10 +2,7 @@ use pinocchio::{
     account_info::AccountInfo,
     program_error::ProgramError, 
     sysvars::{clock::Clock, Sysvar}, 
-    instruction::Seed,
     ProgramResult,
-    pubkey,
-    msg,
 };
 use pinocchio_token::instructions::Transfer;
 use crate::{constants::PERCENTAGE_SCALER, processor::ContributeArgs};
