@@ -8,6 +8,7 @@ use pinocchio::{
 use pinocchio_token::instructions::Transfer;
 use crate::processor::CheckerArgs;
 use crate::state::Fundraiser;
+use crate::utils::validate_pda;
 
 pub fn checker(
     accounts: &[AccountInfo],
@@ -28,34 +29,45 @@ pub fn checker(
 
     let CheckerArgs {
         fundraiser_bump,
+        vault_bump,
     } = CheckerArgs::try_from(args)?;
 
-    let (_, bump) = pubkey::find_program_address(&[
-        b"fundraiser", 
-        maker.key().as_ref(), 
-    ], &crate::ID);
-    assert_eq!(fundraiser_bump, bump as u64);
+    let u8_fundraiser_bump = fundraiser_bump as u8;
+    let fundraiser_bump_bytes = u8_fundraiser_bump.to_le_bytes();
+    validate_pda(&[
+        b"fundraiser",
+        maker.key().as_ref(),
+        &fundraiser_bump_bytes
+    ], &crate::ID, fundraiser.key());
+
+    let u8_vault_bump = vault_bump as u8;
+    let vault_bump_bytes = u8_vault_bump.to_le_bytes();
+    validate_pda(&[
+        b"vault",
+        fundraiser.key().as_ref(),
+        &vault_bump_bytes
+    ], &crate::ID, vault.key());
 
     let fundraiser_data: Fundraiser = *bytemuck::try_from_bytes::<Fundraiser>(&fundraiser.try_borrow_mut_data()?).map_err(|_| ProgramError::InvalidAccountData)?;
 
     // check if the fundraising goal has been reached
     assert!(fundraiser_data.current_amount >= fundraiser_data.amount_to_raise);
     
-    let bump_binding = bump.to_le_bytes();
+    
     let signer_seeds = [
         Seed::from(b"fundraiser"), 
         Seed::from(maker.key().as_ref()), 
-        Seed::from(bump_binding.as_ref())
+        Seed::from(fundraiser_bump_bytes.as_ref())
     ];
-    // let signer = [Signer::from(&signer_seeds)];
+    let signer = [Signer::from(&signer_seeds)];
 
     // transfer the funds to the maker
-    // Transfer {
-    //     from: vault,
-    //     to: maker_ata,
-    //     authority: vault,
-    //     amount: fundraiser_data.current_amount,
-    // }.invoke_signed(&signer)?;
+    Transfer {
+        from: vault,
+        to: maker_ata,
+        authority: vault,
+        amount: fundraiser_data.current_amount,
+    }.invoke_signed(&signer)?;
 
     // TODO:close fundraiser and contributor accounts?
 

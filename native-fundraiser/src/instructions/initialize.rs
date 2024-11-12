@@ -6,12 +6,12 @@ use pinocchio::{
     sysvars::rent::Rent,
     sysvars::Sysvar,
     instruction::{Seed, Signer},
-    pubkey
+    msg
 };
 use pinocchio_system::instructions::CreateAccount;
 
 use crate::processor::InitializeArgs;
-
+use crate::utils::validate_pda;
 pub fn initialize(
     accounts: &[AccountInfo],
     args: &[u8]
@@ -34,18 +34,19 @@ pub fn initialize(
         fundraiser_bump, // since our Fundraiser account will be a PDA (Program Derived Address), we will pass the bump of the account
     } = InitializeArgs::try_from(args)?;
 
-    // check derived address and get bump
-    let (_, bump) = pubkey::find_program_address(&[
-        b"fundraiser", 
-        maker.key().as_ref(), 
-    ], &crate::ID);
-    assert_eq!(fundraiser_bump, bump as u64);
+    // validate the PDA
+    let bump = fundraiser_bump as u8;
+    let fundraiser_bump_bytes = bump.to_le_bytes();
+    validate_pda(
+        &[b"fundraiser", maker.key().as_ref(), &fundraiser_bump_bytes],
+        &crate::ID,
+        fundraiser.key()
+    );
 
-    let bump_binding = bump.to_le_bytes();
     let signer_seeds = [
         Seed::from(b"fundraiser"), 
         Seed::from(maker.key().as_ref()), 
-        Seed::from(bump_binding.as_ref())
+        Seed::from(fundraiser_bump_bytes.as_ref())
     ];
     let signer = [Signer::from(&signer_seeds)];
 
@@ -82,7 +83,7 @@ pub fn initialize(
         current_amount: 0,
         time_started: 0,
         duration,
-        bump: bump as u64,
+        bump: fundraiser_bump,
     };
 
     Ok(())

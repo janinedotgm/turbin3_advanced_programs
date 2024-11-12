@@ -11,7 +11,7 @@ use pinocchio_token::instructions::Transfer;
 use crate::{constants::PERCENTAGE_SCALER, processor::ContributeArgs};
 use crate::constants::{MIN_AMOUNT_TO_RAISE, MAX_CONTRIBUTION_PERCENTAGE, SECONDS_TO_DAYS};
 use crate::state::{Fundraiser, Contributor};
-
+use crate::utils::validate_pda;
 pub fn contribute(
     accounts: &[AccountInfo],
     args: &[u8]
@@ -37,17 +37,16 @@ pub fn contribute(
     let u8_vault_bump = vault_bump as u8;
 
     // check if vault is correct
-    let vault_pda = pubkey::create_program_address(&[
+    validate_pda(&[
         b"vault",
         fundraiser.key().as_ref(),
         &[u8_vault_bump]
-    ], &crate::ID)?;
-
-    assert_eq!(&vault_pda, vault.key());
+    ], &crate::ID, vault.key());
 
     // Check if the amount to contribute meets the minimum amount required
     assert!(amount >= MIN_AMOUNT_TO_RAISE);
 
+    // TODO: check if we need to validate the fundraiser PDA
     // Borrow the data and immediately convert it
     let mut fundraiser_data: Fundraiser = *bytemuck::try_from_bytes::<Fundraiser>(&fundraiser.try_borrow_mut_data()?).map_err(|_| ProgramError::InvalidAccountData)?;
 
@@ -62,9 +61,9 @@ pub fn contribute(
     assert!(amount + contributor_data.amount <= amount_allowed);
     
     // check if the fundraising duration has been reached
-    let current_time = Clock::get()?.unix_timestamp; // TODO: fix this
+    let current_time = Clock::get()?.unix_timestamp; 
     let _fundraiser_end_time = (current_time - fundraiser_data.time_started) / SECONDS_TO_DAYS;
-    // assert!(fundraiser_end_time >= fundraiser_data.duration);
+    // assert!(fundraiser_end_time >= fundraiser_data.duration); // TODO: fails in test because current_time is 0 - fix test
 
     // transfer the contribution amount to the vault
     Transfer {

@@ -6,6 +6,7 @@ mod processor;
 mod instructions;
 mod state;
 mod tests;
+mod utils;
 mod constants;
 
 pub const ID: [u8; 32] =

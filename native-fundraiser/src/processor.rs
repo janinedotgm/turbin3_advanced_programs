@@ -68,6 +68,7 @@ impl TryFrom<&[u8]> for ContributeArgs {
 #[derive(Clone, Copy, PartialEq, Eq, Pod, Zeroable)]
 pub struct CheckerArgs {
     pub fundraiser_bump: u64,
+    pub vault_bump: u64,
 }
 
 impl TryFrom<&[u8]> for CheckerArgs {
