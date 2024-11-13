@@ -54,11 +54,11 @@ pub fn checker(
     
     
     let signer_seeds = [
-        Seed::from(b"fundraiser"), 
-        Seed::from(maker.key().as_ref()), 
-        Seed::from(fundraiser_bump_bytes.as_ref())
+        Seed::from(b"vault"), 
+        Seed::from(fundraiser.key().as_ref()), 
+        Seed::from(vault_bump_bytes.as_ref())
     ];
-    let signer = [Signer::from(&signer_seeds)];
+    let signer = Signer::from(&signer_seeds);
 
     // transfer the funds to the maker
     Transfer {
@@ -66,7 +66,7 @@ pub fn checker(
         to: maker_ata,
         authority: vault,
         amount: fundraiser_data.current_amount,
-    }.invoke_signed(&signer)?;
+    }.invoke_signed(&[signer])?;
 
     // TODO:close fundraiser and contributor accounts?
 

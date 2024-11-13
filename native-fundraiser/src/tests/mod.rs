@@ -33,6 +33,40 @@ mod tests {
         mollusk
     }
 
+    fn create_initialized_vault_account(
+        owner: SolanaPubkey,
+        mint_to_raise: SolanaPubkey,
+        mollusk: &Mollusk,
+        amount: u64,
+    ) -> AccountSharedData {
+        let vault_size = spl_token::state::Account::LEN;
+        let mut account_data = AccountSharedData::new(
+            mollusk
+                .sysvars
+                .rent
+                .minimum_balance(spl_token::state::Account::LEN),
+            vault_size,
+            &spl_token::ID,
+        );
+    
+        spl_token::state::Account::pack(
+            spl_token::state::Account {
+                mint: mint_to_raise,
+                owner,
+                amount: amount,
+                delegate: COption::None,
+                state: AccountState::Initialized,
+                is_native: COption::None,
+                delegated_amount: 0,
+                close_authority: COption::None,
+            },
+            account_data.data_as_mut_slice(),
+        )
+        .unwrap();
+    
+        account_data
+    }
+
     fn create_mint_account(mollusk: &Mollusk, _mint: &SolanaPubkey) -> AccountSharedData{
         let (token_program, _token_program_account) = (
             spl_token::ID,
@@ -74,33 +108,6 @@ mod tests {
 
         
         let (system_program, system_program_account) = program::keyed_account_for_system_program();
-        let (token_program, _token_program_account) = (
-            spl_token::ID,
-            program::create_program_account_loader_v3(&spl_token::ID),
-        );
-
-        let mut vault_account = AccountSharedData::new(
-            mollusk
-                .sysvars
-                .rent
-                .minimum_balance(spl_token::state::Account::LEN),
-            spl_token::state::Account::LEN,
-            &token_program,
-        );
-
-        Pack::pack(
-            spl_token::state::Account {
-                mint: mint_to_raise,
-                owner: fundraiser,
-                amount: 0,
-                delegate: COption::None,
-                state: AccountState::Initialized,
-                is_native: COption::None,
-                delegated_amount: 0,
-                close_authority: COption::None,
-            },
-            vault_account.data_as_mut_slice(),
-        ).unwrap();
        
         let bump_u64 = bump as u64;
 
@@ -213,25 +220,8 @@ mod tests {
 
         // The vault that holds the funds raised
         let (vault, vault_bump) = SolanaPubkey::find_program_address(&[b"vault", fundraiser.as_ref()], &PROGRAM_ID);
-        let vault_size = spl_token::state::Account::LEN;
-        let mut vault_account = AccountSharedData::new(
-            mollusk.sysvars.rent.minimum_balance(vault_size),
-            vault_size,
-            &spl_token::ID,
-        );
-        spl_token::state::Account::pack(
-            spl_token::state::Account {
-                mint: mint_to_raise,
-                owner: vault,
-                amount: 0,
-                delegate: COption::None,
-                state: AccountState::Initialized,
-                is_native: COption::None,
-                delegated_amount: 0,
-                close_authority: COption::None,
-            },
-            vault_account.data_as_mut_slice(),
-        ).unwrap();
+
+        let vault_account = create_initialized_vault_account(fundraiser, mint_to_raise, &mollusk,0);
 
         // The token program
         let (token_program, token_program_account) = (
@@ -312,25 +302,7 @@ mod tests {
             bump: fundraiser_bump as u64,
         }));
 
-        let vault_size = spl_token::state::Account::LEN;
-        let mut vault_account = AccountSharedData::new(
-            mollusk.sysvars.rent.minimum_balance(vault_size),
-            vault_size,
-            &spl_token::ID,
-        );
-        spl_token::state::Account::pack(
-            spl_token::state::Account {
-                mint: mint_to_raise,
-                owner: vault,
-                amount: 1_000_000,
-                delegate: COption::None,
-                state: AccountState::Initialized,
-                is_native: COption::None,
-                delegated_amount: 0,
-                close_authority: COption::None,
-            },
-            vault_account.data_as_mut_slice(),
-        ).unwrap();
+        let vault_account = create_initialized_vault_account(vault, mint_to_raise, &mollusk,1_000_000);
         
         let mut maker_ata_account = AccountSharedData::new(
             mollusk
@@ -369,7 +341,7 @@ mod tests {
             vec![
                 AccountMeta::new(maker, true),
                 AccountMeta::new(fundraiser, false),
-                AccountMeta::new(vault, true),
+                AccountMeta::new(vault, false),
                 AccountMeta::new(maker_ata, false),
                 AccountMeta::new(token_program, false),
             ],
@@ -385,6 +357,7 @@ mod tests {
                 (token_program, token_program_account),
             ],
         );
+        println!("result in checker: {:?}", result);
         assert!(matches!(result.program_result, ProgramResult::Success), "Processing instruction failed");
 
         let vault = result.get_account(&vault).expect("Failed to get vault account");
